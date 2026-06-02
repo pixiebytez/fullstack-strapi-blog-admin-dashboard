@@ -1,0 +1,134 @@
+version: '3.9'
+
+# ============================================================
+#  AI Blog CMS — Development Docker Compose
+#  Services: strapi, postgres, redis, pgadmin
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  # PostgreSQL — primary database
+  # ----------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: aiblog_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-aiblog}
+      POSTGRES_USER: ${DB_USER:-aiblog}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aiblog_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aiblog}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aiblog_net
+
+  # ----------------------------------------------------------
+  # Redis — caching layer
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: aiblog_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_secret} --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aiblog_net
+
+  # ----------------------------------------------------------
+  # Strapi v5 — headless CMS backend
+  # ----------------------------------------------------------
+  strapi:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: aiblog_strapi
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DB_NAME:-aiblog}
+      DATABASE_USERNAME: ${DB_USER:-aiblog}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-aiblog_secret}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_secret}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - strapi_uploads:/app/public/uploads
+    ports:
+      - "1337:1337"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aiblog_net
+
+  # ----------------------------------------------------------
+  # Next.js — SSR frontend
+  # ----------------------------------------------------------
+  nextjs:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: aiblog_nextjs
+    restart: unless-stopped
+    env_file: ./frontend/.env.local
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - strapi
+    networks:
+      - aiblog_net
+
+  # ----------------------------------------------------------
+  # PgAdmin — database GUI (dev only)
+  # ----------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aiblog_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aiblog.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin_secret
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - aiblog_net
+
+volumes:
+  postgres_data:
+  redis_data:
+  strapi_uploads:
+
+networks:
+  aiblog_net:
+    driver: bridge

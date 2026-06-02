@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_shared_seo_meta",
+  "info": {
+    "displayName": "SEO Meta",
+    "description": "SEO fields for pages and posts"
+  },
+  "options": {},
+  "attributes": {
+    "metaTitle": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "metaDescription": {
+      "type": "text"
+    },
+    "keywords": {
+      "type": "string"
+    },
+    "canonicalURL": {
+      "type": "string"
+    },
+    "noIndex": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "kind": "collectionType",
+  "collectionName": "comments",
+  "info": {
+    "singularName": "comment",
+    "pluralName": "comments",
+    "displayName": "Comment",
+    "description": "Blog post comments with moderation"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "content": {
+      "type": "text",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 1000
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "approved", "rejected", "spam"],
+      "default": "pending",
+      "required": true
+    },
+    "likeCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "isEdited": {
+      "type": "boolean",
+      "default": false
+    },
+    "spamScore": {
+      "type": "decimal",
+      "default": 0
+    },
+    "ipAddress": {
+      "type": "string",
+      "private": true
+    },
+    "userAgent": {
+      "type": "string",
+      "private": true
+    },
+    "author": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "blog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::blog.blog",
+      "inversedBy": "comments"
+    },
+    "parentComment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::comment.comment",
+      "inversedBy": "replies"
+    },
+    "replies": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::comment.comment",
+      "mappedBy": "parentComment"
+    }
+  }
+}

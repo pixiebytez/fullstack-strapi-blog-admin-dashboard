@@ -1,0 +1,117 @@
+version: '3.9'
+
+# ============================================================
+#  AI Blog CMS — Production Docker Compose
+#  Adds: Nginx reverse proxy, SSL termination, no dev tools
+# ============================================================
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: aiblog_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aiblog_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: aiblog_redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    networks:
+      - aiblog_net
+
+  strapi:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: aiblog_strapi
+    restart: always
+    env_file: ./backend/.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DB_NAME}
+      DATABASE_USERNAME: ${DB_USER}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - strapi_uploads:/app/public/uploads
+    expose:
+      - "1337"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aiblog_net
+
+  nextjs:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: aiblog_nextjs
+    restart: always
+    env_file: ./frontend/.env.production
+    expose:
+      - "3000"
+    depends_on:
+      - strapi
+    networks:
+      - aiblog_net
+
+  # ----------------------------------------------------------
+  # Nginx — reverse proxy + SSL termination
+  # ----------------------------------------------------------
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: aiblog_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - strapi
+      - nextjs
+    networks:
+      - aiblog_net
+
+volumes:
+  postgres_data:
+  redis_data:
+  strapi_uploads:
+  nginx_cache:
+
+networks:
+  aiblog_net:
+    driver: bridge

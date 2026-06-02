@@ -1,0 +1,127 @@
+{
+  "kind": "collectionType",
+  "collectionName": "blogs",
+  "info": {
+    "singularName": "blog",
+    "pluralName": "blogs",
+    "displayName": "Blog",
+    "description": "Blog posts with full CMS capabilities"
+  },
+  "options": {
+    "draftAndPublish": true,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "title": {
+      "pluginOptions": { "i18n": { "localized": true } },
+      "type": "string",
+      "required": true,
+      "maxLength": 200,
+      "minLength": 5
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "excerpt": {
+      "pluginOptions": { "i18n": { "localized": true } },
+      "type": "text",
+      "maxLength": 500,
+      "required": true
+    },
+    "content": {
+      "pluginOptions": { "i18n": { "localized": true } },
+      "type": "richtext",
+      "required": true
+    },
+    "featuredImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft",
+      "required": true
+    },
+    "readingTime": {
+      "type": "integer",
+      "min": 1
+    },
+    "viewCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "likeCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "isTrending": {
+      "type": "boolean",
+      "default": false
+    },
+    "trendingScore": {
+      "type": "decimal",
+      "default": 0
+    },
+    "aiGenerated": {
+      "type": "boolean",
+      "default": false
+    },
+    "seoMeta": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.seo-meta"
+    },
+    "openGraph": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.open-graph"
+    },
+    "author": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::category.category",
+      "inversedBy": "blogs"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tag.tag",
+      "mappedBy": "blogs"
+    },
+    "comments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::comment.comment",
+      "mappedBy": "blog"
+    },
+    "relatedPosts": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::blog.blog"
+    },
+    "publishedDate": {
+      "type": "datetime"
+    }
+  }
+}

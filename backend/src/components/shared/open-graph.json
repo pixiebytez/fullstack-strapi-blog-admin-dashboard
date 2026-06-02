@@ -1,0 +1,28 @@
+{
+  "collectionName": "components_shared_open_graph",
+  "info": {
+    "displayName": "Open Graph",
+    "description": "Open graph metadata fields"
+  },
+  "options": {},
+  "attributes": {
+    "ogTitle": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "ogDescription": {
+      "type": "text"
+    },
+    "ogType": {
+      "type": "string",
+      "default": "article"
+    },
+    "ogImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    }
+  }
+}
